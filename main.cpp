@@ -5,6 +5,25 @@
 #include <string>
 #include <algorithm>
 
+#include <chrono>
+
+struct timer
+{
+public:
+    timer()
+    {
+        start = std::chrono::high_resolution_clock::now();
+    }
+    ~timer()
+    {
+        auto end = std::chrono:high_resolution_clock::now();
+        std::chrono::duration<double> elapsed = end - start;
+        std::cout << "Time took: " << elapsed.count()*1000 << "ms" << std::endl;
+    }
+private:
+    std::chrono::time_point start;
+}
+
 void guessNumber(int max = 20)
 {
     int tries = 0;
@@ -98,6 +117,6 @@ void lineToMorse()
 int main()
 {
     //guessNumber();
-    lineToMorse();
+    //lineToMorse();
     return 0;
 }
