@@ -7,22 +7,22 @@
 
 #include <chrono>
 
-struct timer
+struct Timer
 {
 public:
-    timer()
+    Timer()
     {
         start = std::chrono::high_resolution_clock::now();
     }
-    ~timer()
+    ~Timer()
     {
-        auto end = std::chrono:high_resolution_clock::now();
+        auto end = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double> elapsed = end - start;
         std::cout << "Time took: " << elapsed.count()*1000 << "ms" << std::endl;
     }
 private:
-    std::chrono::time_point start;
-}
+    std::chrono::time_point<std::chrono::high_resolution_clock> start;
+};
 
 void guessNumber(int max = 20)
 {
@@ -103,6 +103,7 @@ void lineToMorse()
     std::string line;
     std::cout << "Type line you wish translated to morse:" << std::endl;
     std::getline(std::cin, line);
+    Timer timer;
     std::transform(line.begin(), line.end(), line.begin(), ::toupper);
     for (char c : line)
     {
@@ -117,6 +118,6 @@ void lineToMorse()
 int main()
 {
     //guessNumber();
-    //lineToMorse();
+    lineToMorse();
     return 0;
 }
