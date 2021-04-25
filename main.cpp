@@ -1,11 +1,13 @@
 #include <iostream>
 #include <map>
+#include <vector>
 #include <stdlib.h>
 #include <ctime>
 #include <string>
 #include <algorithm>
-
 #include <chrono>
+#include <functional>
+#include <regex>
 
 struct Timer
 {
@@ -115,9 +117,95 @@ void lineToMorse()
     std::cout << std::endl;
 }
 
+namespace BattleShip
+{
+    // Ship Lengths
+    namespace Length {
+        int Carrier    = 5;
+        int Battleship = 4;
+        int Destroyer  = 3;
+        int Submarine  = 3;
+        int PatrolBoat = 2;
+    }
+    
+    using Row = std::vector<char>;
+    
+    class Board
+    {
+        private:
+            std::vector<Row> map;
+        public:
+            Board(const char& base)
+                : map(10)
+            {
+                for (int y = 0; y < 10; y++)
+                {
+                    map[y] = Row(10);
+                    for (int x = 0; x < 10; x++)
+                    {
+                        map[y][x] = base;
+                    }
+                }
+            }
+            
+            const Row& getRow(int row) const
+            {
+                return map[row];
+            }
+    };
+    
+    void drawRows(int index, const Row& row1, const Row& row2)
+    {
+        // Draw first board's row
+        printf(" %2d", index);
+        for (auto c : row1)
+            std::cout << " " << c;
+        // Draw second board's row
+        printf("\t %2d", index);
+        for (auto c : row2)
+            std::cout << " " << c;
+        std::cout << "\n";
+    }
+    
+    using drawBoardFn = std::function<void()>;
+    
+    void drawBoard(const Board& own, const Board& fire)
+    {
+        printf("\033c"); // Clear console
+        printf(" Own Board             \tFiring Board\n");
+        printf("    A B C D E F G H I J\t    A B C D E F G H I J\n");
+        for (int i = 0; i < 10; i++)
+            drawRows(i+1, own.getRow(i), fire.getRow(i));
+        std::cout << std::endl;
+    }
+    
+    void InitBoard(drawBoardFn draw, const Board& own)
+    {
+        draw();
+        std::cout << " First you must place your own ships!\n\tWhere would you like to place your Carrier(5)? Format: \"A:1 A:5\"" << std::endl;
+        
+        std::string line;
+        std::getline(std::cin, line);
+        
+        std::regex r("([A-Ja-j]):([1-9]|10)");
+        auto rbegin = std::sregex_iterator(line.begin(), line.end(), r);
+        auto rend = std::sregex_iterator();
+        
+        std::cout << "Found matches: " << std::distance(rbegin, rend) << std::endl;
+    }
+    
+    void StartGame()
+    {
+        Board own(' '), enemy('~');
+        drawBoardFn draw = std::bind(drawBoard, own, enemy);
+        InitBoard(draw, own);
+    }
+}
+
 int main()
 {
     //guessNumber();
-    lineToMorse();
+    //lineToMorse();
+    ::BattleShip::StartGame();
     return 0;
 }
