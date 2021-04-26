@@ -8,6 +8,15 @@
 #include <chrono>
 #include <functional>
 #include <regex>
+#include <memory>
+
+template<typename T>
+using ref = std::shared_ptr<T>;
+template<typename T, typename ... Args>
+constexpr ref<T> makeref(Args&& ... args)
+{
+    return std::make_shared<T>(std::forward<Args>(args)...);
+}
 
 struct Timer
 {
@@ -157,6 +166,11 @@ namespace BattleShip
             {
                 return map[row];
             }
+            
+            const void setChar(int row, int column, char c)
+            {
+                map[row][column] = c;
+            }
     };
     
     struct Point 
@@ -166,10 +180,17 @@ namespace BattleShip
         
         int getX() const
         {
-            constexpr int beginning = (int)'A';
-            return beginning - (int)X;
+            return (int)X - (int)'A';
+        }
+        
+        friend std::ostream & operator<<(std::ostream & os, Point const& p) 
+        {
+            os << p.X << ":" << p.Y;
+            return os;
         }
     };
+    
+    
     
     void drawRows(int index, const Row& row1, const Row& row2)
     {
@@ -186,46 +207,80 @@ namespace BattleShip
     
     using drawBoardFn = std::function<void()>;
     
-    void drawBoard(const Board& own, const Board& fire)
+    void drawBoard(const ref<Board>& own, const ref<Board>& fire)
     {
         printf("\033c"); // Clear console
         printf(" Own Board             \tFiring Board\n");
         printf("    A B C D E F G H I J\t    A B C D E F G H I J\n");
         for (int i = 0; i < 10; i++)
-            drawRows(i+1, own.getRow(i), fire.getRow(i));
+            drawRows(i+1, own->getRow(i), fire->getRow(i));
         std::cout << std::endl;
     }
     
     Point StringToPoint(std::string coord)
     {
         ToUpper(coord);
-        return Point();
+        Point p;
+        p.X = coord[0];
+        constexpr int beginning = (int)'0';
+        if (coord.size() == 5)
+            p.Y = 10; //((int)coord[2] - beginning * 10) + (int)coord[3] - beginning;
+            // 10 is the only number that is two characters long
+        else
+            p.Y = (int)coord[2] - beginning;
+        return p;
     }
     
-    void InitBoard(drawBoardFn draw, const Board& own)
+    std::string getLine()
     {
-        draw();
-        std::cout << " First you must place your own ships! Format: \"A:1 A:5\"\n\tCarrier (5)" << std::endl;
-        
         std::string line;
         std::getline(std::cin, line);
+        line += ' ';
+        return line;
+    }
+    
+    const std::regex pointRegex("([A-Ja-j]):([1-9]|10)[^1-9\\S]");
+    
+    void InitBoard(drawBoardFn draw, ref<Board> own)
+    {
+        bool finished = false;
+        auto rbegin = std::sregex_iterator(), rend = std::sregex_iterator();
+        std::string warning;
+        do
+        {
+            draw();
+            std::cout << " First you must place your own ships! Format: \"A:1 A:5\"\n\tCarrier (5)\n\t" << warning << std::endl;
+            
+            std::string line = getLine();
+            
+            rbegin = std::sregex_iterator(line.begin(), line.end(), pointRegex);
+            int c = std::distance(rbegin, rend);
+            
+            if (c != 2)
+            {
+                warning = "Couldn't match 2 points, please try again.";
+                continue;
+            }
+            
+            finished = true;
+            
+        } while(!finished);
         
-        std::regex r("([A-Ja-j]):([1-9]|10)[^1-9]");
-        auto rbegin = std::sregex_iterator(line.begin(), line.end(), r);
-        auto rend = std::sregex_iterator();
-        
-        std::cout << "Found matches: " << std::distance(rbegin, rend) << std::endl;
+        std::cout << "TWO MATCHES" << std::endl;
         for (auto it = rbegin; it != rend; ++it)
         {
             std::smatch match = *it;
-            std::cout << "\t" << match.str() << std::endl;
-            //StringToPoint(match.str());
+            Point p = StringToPoint(match.str());
+            own->setChar(p.Y-1, p.getX(), '#');  
         }
+        
+        draw();
+        
     }
     
     void StartGame()
     {
-        Board own(' '), enemy('~');
+        ref<Board> own = makeref<Board>(' '), enemy = makeref<Board>('~');
         drawBoardFn draw = std::bind(drawBoard, own, enemy);
         InitBoard(draw, own);
     }
