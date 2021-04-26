@@ -59,6 +59,11 @@ void guessNumber(int max = 20)
     std::cout << "Well done! It took you " << tries << " tries" << std::endl;
 }
 
+inline void ToUpper(std::string& str)
+{
+    std::transform(str.begin(), str.end(), str.begin(), ::toupper);
+}
+
 std::map<char, std::string> morseCode =
 {
     {'A', "•–"},
@@ -106,7 +111,7 @@ void lineToMorse()
     std::cout << "Type line you wish translated to morse:" << std::endl;
     std::getline(std::cin, line);
     Timer timer;
-    std::transform(line.begin(), line.end(), line.begin(), ::toupper);
+    ToUpper(line);
     for (char c : line)
     {
         auto morse = morseCode[c];
@@ -154,6 +159,18 @@ namespace BattleShip
             }
     };
     
+    struct Point 
+    {
+        char X;
+        int Y;
+        
+        int getX() const
+        {
+            constexpr int beginning = (int)'A';
+            return beginning - (int)X;
+        }
+    };
+    
     void drawRows(int index, const Row& row1, const Row& row2)
     {
         // Draw first board's row
@@ -179,19 +196,31 @@ namespace BattleShip
         std::cout << std::endl;
     }
     
+    Point StringToPoint(std::string coord)
+    {
+        ToUpper(coord);
+        return Point();
+    }
+    
     void InitBoard(drawBoardFn draw, const Board& own)
     {
         draw();
-        std::cout << " First you must place your own ships!\n\tWhere would you like to place your Carrier(5)? Format: \"A:1 A:5\"" << std::endl;
+        std::cout << " First you must place your own ships! Format: \"A:1 A:5\"\n\tCarrier (5)" << std::endl;
         
         std::string line;
         std::getline(std::cin, line);
         
-        std::regex r("([A-Ja-j]):([1-9]|10)");
+        std::regex r("([A-Ja-j]):([1-9]|10)[^1-9]");
         auto rbegin = std::sregex_iterator(line.begin(), line.end(), r);
         auto rend = std::sregex_iterator();
         
         std::cout << "Found matches: " << std::distance(rbegin, rend) << std::endl;
+        for (auto it = rbegin; it != rend; ++it)
+        {
+            std::smatch match = *it;
+            std::cout << "\t" << match.str() << std::endl;
+            //StringToPoint(match.str());
+        }
     }
     
     void StartGame()
